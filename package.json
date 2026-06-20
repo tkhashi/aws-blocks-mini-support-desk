@@ -4,7 +4,8 @@
   "type": "module",
   "blocksTemplate": "react",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
   },
   "workspaces": [
     "aws-blocks"
@@ -25,14 +26,14 @@
     "vendorize": "blocks-vendorize"
   },
   "dependencies": {
-    "@aws-blocks/blocks": "*",
+    "@aws-blocks/blocks": "0.1.x",
     "@aws-sdk/client-sqs": "^3.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^4.3.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",

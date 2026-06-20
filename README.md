@@ -34,9 +34,21 @@ Mini Support Desk は、AWS Blocks を使って構築するサポートデスク
     └── knowledge-base/        # Bedrock RAG 用参照ドキュメント
 ```
 
+## 検証環境
+
+このサンプルと Book は次の環境を前提にしています。AWS Blocks は Preview のため、最新バージョンでは API や生成テンプレートが変わる可能性があります。再現性のため、`@aws-blocks/blocks` は `package-lock.json` に固定したバージョンを基準にしてください。
+
+- **Node.js**: 22.x（`>=22.0.0`）
+- **npm**: 10.x 以上（`>=10.0.0`）
+- **AWS Blocks**: `package-lock.json` に固定（検証時点で `@aws-blocks/blocks@0.1.2`）
+- **AWS CLI**: v2（sandbox / Pipeline を実 AWS で動かす場合）
+- **AWS CDK**: `package.json` / lockfile のバージョン（`aws-cdk-lib@2.260.0`）
+
 ## ローカル起動（AWS アカウント不要）
 
 ```bash
+node --version   # v22 以上
+npm --version    # 10 以上
 npm install
 npm run dev      # フロント http://localhost:3000 / API http://localhost:3001
 ```
@@ -64,6 +76,15 @@ npm run sandbox:destroy  # 後片付け（必ず実行）
 ```
 
 CDK layer / Pipeline / Bedrock は、この sandbox 環境で確認します。Aurora など起動中に課金されるリソースがあるため、確認後は必ず `sandbox:destroy` で削除してください。
+
+## 参照
+
+- [AWS Blocks Developer Guide](https://docs.aws.amazon.com/blocks/latest/devguide/what-is-blocks.html)
+- [Getting started with AWS Blocks](https://docs.aws.amazon.com/blocks/latest/devguide/getting-started.html)
+- [Deploy your application to AWS](https://docs.aws.amazon.com/blocks/latest/devguide/deploy-to-aws.html)
+- [AWS Blocks concepts](https://docs.aws.amazon.com/blocks/latest/devguide/concepts.html)
+- [AWS Blocks GitHub Repository](https://github.com/aws-devtools-labs/aws-blocks)
+- [create-blocks-app README](https://github.com/aws-devtools-labs/aws-blocks/blob/main/packages/create-blocks-app/README.md)
 
 ## 関連リンク
 
