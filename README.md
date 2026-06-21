@@ -2,89 +2,43 @@
 
 [アプリエンジニアのための AWS Blocks ハンズオン](https://zenn.dev/tkhashi/books/aws-blocks-mini-support-desk) のサンプルアプリです。
 
-## 概要
+このリポジトリには、**同じ Mini Support Desk を 2 通りの API 実装で作った、独立した 2 つのプロジェクト**が含まれています。
 
-Mini Support Desk は、AWS Blocks を使って構築するサポートデスクアプリです。
-ユーザーが問い合わせチケットを作成し、添付ファイルを付け、必要に応じて AI による回答案を生成できます。
+| ディレクトリ | API の実装 | 対応する章 |
+|---|---|---|
+| [`api-namespace/`](./api-namespace/) | `ApiNamespace`（JSON-RPC・`import { api } from 'aws-blocks'` で型安全に呼ぶ） | 本編（01〜08章） |
+| [`raw-route/`](./raw-route/) | `RawRoute`（生 HTTP ルート・素の `fetch` で呼ぶ・セッション Cookie 認証） | おまけ（09章） |
 
-**バックエンドは AWS Blocks 標準の `ApiNamespace` で実装**しています。フロントエンドは型安全なクライアント（`import { api } from 'aws-blocks'`）から API を呼びます。
+両者は **型情報もデータも一切共有しない、それぞれ単体で完結する独立プロジェクト**です（`shared/types.ts` などもディレクトリごとに別のコピーを持ちます）。ルートには npm workspaces などの共有設定はありません。
 
-## スタック
+## 使い方
 
-- **フロントエンド**: React + Vite + TypeScript
-- **バックエンド**: AWS Blocks（`ApiNamespace` / `AuthCognito` / `Database` / `FileBucket` / `Logger` / `Metrics` / `AsyncJob` / `CronJob` / `EmailClient` / `KnowledgeBase` / `Agent`）
-- **インフラ拡張**: CDK layer（SQS / Step Functions / EventBridge Pipes / SNS / CloudWatch Alarm）、Pipeline（CodePipeline）
-
-## ディレクトリ構成
-
-```
-├── src/                       # フロントエンド（React + Vite）
-│   ├── App.tsx                # 認証ゲート + 画面遷移
-│   ├── main.tsx
-│   └── pages/                 # Login / TicketList / TicketCreate / TicketDetail
-├── aws-blocks/
-│   ├── index.ts               # Blocks バックエンド定義（API 本体）
-│   ├── index.cdk.ts           # CDK スタック + CDK layer（SQS/SF/SNS/Alarm）
-│   ├── pipeline.cdk.ts        # CI/CD パイプライン定義
-│   ├── index.handler.ts       # Lambda ハンドラ（自動生成）
-│   └── migrations/            # PostgreSQL マイグレーション（001〜003）
-├── shared/
-│   └── types.ts               # 共通型定義（Ticket 等）
-└── docs/
-    └── knowledge-base/        # Bedrock RAG 用参照ドキュメント
-```
-
-## 検証環境
-
-このサンプルと Book は次の環境を前提にしています。AWS Blocks は Preview のため、最新バージョンでは API や生成テンプレートが変わる可能性があります。再現性のため、`@aws-blocks/blocks` は `package-lock.json` に固定したバージョンを基準にしてください。
-
-- **Node.js**: 22.x（`>=22.0.0`）
-- **npm**: 10.x 以上（`>=10.0.0`）
-- **AWS Blocks**: `package-lock.json` に固定（検証時点で `@aws-blocks/blocks@0.1.2`）
-- **AWS CLI**: v2（sandbox / Pipeline を実 AWS で動かす場合）
-- **AWS CDK**: `package.json` / lockfile のバージョン（`aws-cdk-lib@2.260.0`）
-
-## ローカル起動（AWS アカウント不要）
+どちらかのディレクトリに入って、その中で操作します。
 
 ```bash
-node --version   # v22 以上
-npm --version    # 10 以上
+# ApiNamespace 版（本編）
+cd api-namespace
+npm install
+npm run dev      # フロント http://localhost:3000 / API http://localhost:3001
+
+# RawRoute 版（おまけ）
+cd raw-route
 npm install
 npm run dev      # フロント http://localhost:3000 / API http://localhost:3001
 ```
 
-すべての Block がローカルモックで動きます。サインアップ時の確認コードは `npm run dev` のターミナルに出力されます（`[auth] ... の確認コード: 123456`）。データは `.bb-data/` に保存され、削除でリセットできます。
+> [!IMPORTANT]
+> 2 版は同じポート（:3000 / :3001）を使うため、**同時には起動しないでください**。片方を止めてからもう片方を起動します。
 
-## 検証状況
+各バージョンの詳細（エンドポイント・検証状況・AWS デプロイ手順など）は、それぞれの README を参照してください。
 
-| 範囲 | 状態 |
-|---|---|
-| バックエンド（認証・DB・ファイル・観測・AsyncJob・CronJob・Email・KB・Agent[canned]） | ✅ ローカルモックで動作確認済み |
-| フロントエンド（4ページ） | ✅ `vite build` で型・ビルド確認 |
-| CDK layer（SQS / Step Functions / SNS / Alarm） | ⚠ コードのみ。実 AWS（`npm run sandbox`）での動作は未検証 |
-| Pipeline（`aws-blocks/pipeline.cdk.ts`） | ⚠ コードのみ。`cdk synth` / 実デプロイは未検証 |
-| Bedrock 実行（KnowledgeBase 埋め込み / Agent 実モデル） | ⚠ sandbox（実 Bedrock）での動作は未検証 |
-| Ollama（`Agent` の `model.local`） | ⚠ 未検証。Ollama 未起動時は canned へ自動フォールバック |
+- [`api-namespace/README.md`](./api-namespace/README.md)
+- [`raw-route/README.md`](./raw-route/README.md)
 
-> ⚠ 印は AWS アカウント・課金が必要、もしくは外部依存があり、ローカルモックだけでは確認できない部分です。
+## どちらを読むべきか
 
-## AWS で動かす（任意・課金あり）
-
-```bash
-npm run sandbox          # 実 AWS にデプロイして検証
-npm run sandbox:destroy  # 後片付け（必ず実行）
-```
-
-CDK layer / Pipeline / Bedrock は、この sandbox 環境で確認します。Aurora など起動中に課金されるリソースがあるため、確認後は必ず `sandbox:destroy` で削除してください。
-
-## 参照
-
-- [AWS Blocks Developer Guide](https://docs.aws.amazon.com/blocks/latest/devguide/what-is-blocks.html)
-- [Getting started with AWS Blocks](https://docs.aws.amazon.com/blocks/latest/devguide/getting-started.html)
-- [Deploy your application to AWS](https://docs.aws.amazon.com/blocks/latest/devguide/deploy-to-aws.html)
-- [AWS Blocks concepts](https://docs.aws.amazon.com/blocks/latest/devguide/concepts.html)
-- [AWS Blocks GitHub Repository](https://github.com/aws-devtools-labs/aws-blocks)
-- [create-blocks-app README](https://github.com/aws-devtools-labs/aws-blocks/blob/main/packages/create-blocks-app/README.md)
+- まずは **`api-namespace/`（本編）** から。AWS Blocks 標準の型安全な API（`ApiNamespace`）でアプリを組み立てます。
+- 余裕があれば **`raw-route/`（おまけ）** で、同じ API を生 HTTP（`RawRoute`）で実装し直すとどう変わるか（型安全 vs HTTP 制御の使い分け）を確認できます。
 
 ## 関連リンク
 
