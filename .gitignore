@@ -1,8 +1,10 @@
-dist
-node_modules
-build-temp
-.blocks-sandbox
-cdk.out/
-aws-blocks/client.js
-aws-blocks/blocks.spec.json
-.bb-data/
+# 生成物・依存（api-namespace/ と raw-route/ の両方を再帰的に無視）
+**/node_modules
+**/dist
+**/build-temp
+**/.blocks
+**/.blocks-sandbox
+**/.bb-data
+**/cdk.out
+**/aws-blocks/client.js
+**/aws-blocks/blocks.spec.json
