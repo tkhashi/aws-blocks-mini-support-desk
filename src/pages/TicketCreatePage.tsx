@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from 'aws-blocks';
+import { tickets, attachments } from '../api';
 import type { TicketPriority } from '../../shared/types';
 
 type Props = {
@@ -21,11 +21,11 @@ export default function TicketCreatePage({ onDone, onCancel }: Props) {
       let attachmentKey: string | undefined;
       if (file) {
         // 署名付き URL を取得し、ブラウザから直接アップロード
-        const { key, url } = await api.getAttachmentUploadUrl(file.name);
+        const { key, url } = await attachments.uploadUrl(file.name);
         await fetch(url, { method: 'PUT', body: file });
         attachmentKey = key;
       }
-      await api.createTicket(title.trim(), body.trim(), priority, attachmentKey);
+      await tickets.create({ title: title.trim(), body: body.trim(), priority, attachmentKey });
       onDone();
     } finally {
       setSubmitting(false);

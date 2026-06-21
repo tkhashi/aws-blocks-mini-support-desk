@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { authApi } from 'aws-blocks';
-import { AccountMenuBar, onAuthChange } from '@aws-blocks/blocks/ui';
+import { useEffect, useState } from 'react';
+import { auth } from './api';
 import LoginPage from './pages/LoginPage';
 import TicketListPage from './pages/TicketListPage';
 import TicketCreatePage from './pages/TicketCreatePage';
@@ -11,26 +10,32 @@ type View = { name: 'list' } | { name: 'create' } | { name: 'detail'; ticketId: 
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
   const [view, setView] = useState<View>({ name: 'list' });
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  // ログイン状態の変化を購読
-  useEffect(() => onAuthChange(authApi, (u) => setUser(u as User | null)), []);
-
-  // アカウントメニュー（サインアウト等）を描画
+  // 起動時にセッション Cookie からログイン状態を確認する（GET /auth/me）
   useEffect(() => {
-    if (user && menuRef.current && !menuRef.current.hasChildNodes()) {
-      menuRef.current.appendChild(AccountMenuBar(authApi));
-    }
-  }, [user]);
+    auth.me()
+      .then((u) => setUser(u))
+      .finally(() => setChecking(false));
+  }, []);
 
-  if (!user) return <LoginPage />;
+  const signOut = async () => {
+    await auth.signOut();
+    setUser(null);
+  };
+
+  if (checking) return <p style={{ textAlign: 'center', marginTop: 64 }}>読み込み中...</p>;
+  if (!user) return <LoginPage onSignedIn={(u) => setUser(u)} />;
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: 16 }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: 20 }}>Mini Support Desk</h1>
-        <div ref={menuRef} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 13, color: '#666' }}>{user.username}</span>
+          <button onClick={signOut}>サインアウト</button>
+        </div>
       </header>
 
       {view.name === 'list' && (

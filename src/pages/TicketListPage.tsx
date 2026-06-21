@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from 'aws-blocks';
+import { tickets, downloadTicketsCsv } from '../api';
 import type { Ticket } from '../../shared/types';
 
 type Props = {
@@ -8,12 +8,12 @@ type Props = {
 };
 
 export default function TicketListPage({ onCreate, onOpen }: Props) {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [list, setList] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.listTickets()
-      .then(setTickets)
+    tickets.list()
+      .then(setList)
       .finally(() => setLoading(false));
   }, []);
 
@@ -21,14 +21,18 @@ export default function TicketListPage({ onCreate, onOpen }: Props) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: 18 }}>チケット一覧</h2>
-        <button onClick={onCreate}>新規作成</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {/* RawRoute の text/csv エンドポイントを fetch してダウンロード */}
+          <button onClick={() => downloadTicketsCsv()}>CSV エクスポート</button>
+          <button onClick={onCreate}>新規作成</button>
+        </div>
       </div>
 
       {loading && <p>読み込み中...</p>}
-      {!loading && tickets.length === 0 && <p style={{ color: '#666' }}>チケットはまだありません。</p>}
+      {!loading && list.length === 0 && <p style={{ color: '#666' }}>チケットはまだありません。</p>}
 
       <ul style={{ listStyle: 'none', padding: 0 }}>
-        {tickets.map((t) => (
+        {list.map((t) => (
           <li
             key={t.id}
             onClick={() => onOpen(t.id)}

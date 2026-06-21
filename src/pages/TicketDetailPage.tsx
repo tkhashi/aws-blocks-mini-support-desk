@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from 'aws-blocks';
+import { tickets } from '../api';
 import type { Ticket } from '../../shared/types';
 
 type Props = {
@@ -12,18 +12,18 @@ export default function TicketDetailPage({ ticketId, onBack }: Props) {
   const [answer, setAnswer] = useState<string | null>(null);
   const [drafting, setDrafting] = useState(false);
 
-  const load = () => { api.getTicket(ticketId).then(setTicket); };
+  const load = () => { tickets.get(ticketId).then(setTicket); };
   useEffect(load, [ticketId]);
 
   const close = async () => {
-    await api.closeTicket(ticketId);
+    await tickets.close(ticketId);
     load();
   };
 
   const draft = async () => {
     setDrafting(true);
     try {
-      const res = await api.draftAnswer(ticketId);
+      const res = await tickets.draftAnswer(ticketId);
       setAnswer(res.answer);
     } finally {
       setDrafting(false);

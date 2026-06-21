@@ -2,28 +2,47 @@
 
 [アプリエンジニアのための AWS Blocks ハンズオン](https://zenn.dev/tkhashi/books/aws-blocks-mini-support-desk) のサンプルアプリです。
 
+> [!NOTE]
+> **このブランチ（`example/raw-route`）は、API を `ApiNamespace`（JSON-RPC）ではなく `RawRoute`（生 HTTP ルート）で実装し直した別バージョンです。** 本編（`main`）とは別物で、`main` にはマージしません。Book のおまけ章「JSON-RPC ではなく RawRoute で実装する」に対応します。
+>
+> - `main`: `export const api = new ApiNamespace(...)` ＋ `<Authenticator>` ＋ `import { api } from 'aws-blocks'`（型安全な RPC）
+> - このブランチ: `new RawRoute(scope, id, { method, path, handler })` ＋ 自前フォーム ＋ 素の `fetch`（生 HTTP・セッション Cookie 認証）
+
 ## 概要
 
 Mini Support Desk は、AWS Blocks を使って構築するサポートデスクアプリです。
 ユーザーが問い合わせチケットを作成し、添付ファイルを付け、必要に応じて AI による回答案を生成できます。
 
-**バックエンドは AWS Blocks 標準の `ApiNamespace` で実装**しています。フロントエンドは型安全なクライアント（`import { api } from 'aws-blocks'`）から API を呼びます。
+**このブランチではバックエンドを `RawRoute`（生 HTTP ルート）で実装**しています。認証も `auth.createApi()` / `<Authenticator>` を使わず、`AuthCognito` のメソッド（`signIn` 等）を RawRoute から直接呼び、セッション Cookie（HttpOnly）で保護します。フロントエンドは型安全なクライアントの代わりに素の `fetch`（`credentials: 'include'`）で各エンドポイントを呼びます。Block の構成自体は `main` と同じです。
+
+### RawRoute エンドポイント一覧
+
+| メソッド・パス | 役割 |
+|---|---|
+| `POST /auth/sign-up` `/auth/confirm` `/auth/sign-in` `/auth/sign-out` | 認証フロー（Cookie 発行・破棄） |
+| `GET /auth/me` | 現在のユーザー（未ログインは `user: null`） |
+| `POST /tickets` `GET /tickets` `GET /tickets/{id}` `POST /tickets/{id}/close` | チケット CRUD |
+| `POST /tickets/{id}/draft-answer` | AI 回答案（ローカルは canned） |
+| `POST /attachments/upload-url` `GET /attachments/download-url?key=` | 添付の presigned URL |
+| `GET /search?q=` | KnowledgeBase 検索 |
+| `GET /export/tickets.csv` | CSV エクスポート（`text/csv` の非 JSON ダウンロード） |
 
 ## スタック
 
 - **フロントエンド**: React + Vite + TypeScript
-- **バックエンド**: AWS Blocks（`ApiNamespace` / `AuthCognito` / `Database` / `FileBucket` / `Logger` / `Metrics` / `AsyncJob` / `CronJob` / `EmailClient` / `KnowledgeBase` / `Agent`）
+- **バックエンド**: AWS Blocks（`RawRoute` / `AuthCognito` / `Database` / `FileBucket` / `Logger` / `Metrics` / `AsyncJob` / `CronJob` / `EmailClient` / `KnowledgeBase` / `Agent`）
 - **インフラ拡張**: CDK layer（SQS / Step Functions / EventBridge Pipes / SNS / CloudWatch Alarm）、Pipeline（CodePipeline）
 
 ## ディレクトリ構成
 
 ```
 ├── src/                       # フロントエンド（React + Vite）
-│   ├── App.tsx                # 認証ゲート + 画面遷移
+│   ├── App.tsx                # 認証ゲート + 画面遷移（GET /auth/me で判定）
+│   ├── api.ts                 # RawRoute を叩く fetch クライアント
 │   ├── main.tsx
-│   └── pages/                 # Login / TicketList / TicketCreate / TicketDetail
+│   └── pages/                 # Login（自前フォーム）/ TicketList / TicketCreate / TicketDetail
 ├── aws-blocks/
-│   ├── index.ts               # Blocks バックエンド定義（API 本体）
+│   ├── index.ts               # Blocks バックエンド定義（RawRoute で API を公開）
 │   ├── index.cdk.ts           # CDK スタック + CDK layer（SQS/SF/SNS/Alarm）
 │   ├── pipeline.cdk.ts        # CI/CD パイプライン定義
 │   ├── index.handler.ts       # Lambda ハンドラ（自動生成）
@@ -59,8 +78,8 @@ npm run dev      # フロント http://localhost:3000 / API http://localhost:300
 
 | 範囲 | 状態 |
 |---|---|
-| バックエンド（認証・DB・ファイル・観測・AsyncJob・CronJob・Email・KB・Agent[canned]） | ✅ ローカルモックで動作確認済み |
-| フロントエンド（4ページ） | ✅ `vite build` で型・ビルド確認 |
+| RawRoute API（Cookie 認証フロー・チケット CRUD・添付・検索・draft-answer[canned]・CSV エクスポート・401 ガード） | ✅ ローカルモックで動作確認済み（curl で全エンドポイント疎通） |
+| フロントエンド（4ページ・自前認証フォーム・CSV ダウンロード） | ✅ `tsc` で型確認（vite proxy 経由で API へ） |
 | CDK layer（SQS / Step Functions / SNS / Alarm） | ⚠ コードのみ。実 AWS（`npm run sandbox`）での動作は未検証 |
 | Pipeline（`aws-blocks/pipeline.cdk.ts`） | ⚠ コードのみ。`cdk synth` / 実デプロイは未検証 |
 | Bedrock 実行（KnowledgeBase 埋め込み / Agent 実モデル） | ⚠ sandbox（実 Bedrock）での動作は未検証 |
